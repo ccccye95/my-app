@@ -1,10 +1,12 @@
 from ui_book_add import Ui_Dialog as UiDialog
+from PyQt6.QtCore import QDate
 from PyQt6.QtWidgets import QDialog, QMessageBox
 
 class bookAddWindow(UiDialog, QDialog):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.data = None
         # 连接信号槽
         self.form_btn_submit.clicked.connect(self.submit)
         self.form_btn_reset.clicked.connect(self.resetForm)
@@ -17,7 +19,9 @@ class bookAddWindow(UiDialog, QDialog):
             # QMessageBox.warning(self, "提示", "校验失败")
             return
 
-        print(data)
+        # 验证通过后把数据保存到窗口对象中，主窗口通过self.data读取。
+        self.data = data
+        self.accept()
 
     # 收集表单数据
     def collectForm(self):
@@ -66,9 +70,10 @@ class bookAddWindow(UiDialog, QDialog):
         self.form_book_code.clear()
         self.form_book_name.clear()
         self.form_author.clear()
-        self.form_type.clear()
-        self.form_date.clear()
+        self.form_type.setCurrentIndex(0)
+        self.form_date.setDate(QDate.currentDate())
         self.form_ok.setChecked(True)
+        self.form_no.setChecked(False)
         self.form_tag_1.setChecked(False)
         self.form_tag_2.setChecked(False)
         self.form_tag_3.setChecked(False)
