@@ -6,6 +6,7 @@ class bookAddWindow(UiDialog, QDialog):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        # 定义data  图书信息，主页可以访问
         self.data = None
         # 连接信号槽
         self.form_btn_submit.clicked.connect(self.submit)
@@ -13,15 +14,19 @@ class bookAddWindow(UiDialog, QDialog):
 
     # 提交表单
     def submit(self):
+        # 收集数据
         data = self.collectForm()
 
+        # 传入收集好的数据
         if not self.validateForm(data):
             # QMessageBox.warning(self, "提示", "校验失败")
             return
 
         # 验证通过后把数据保存到窗口对象中，主窗口通过self.data读取。
+        # 区别这两个data
         self.data = data
         self.accept()
+        # print(data)
 
     # 收集表单数据
     def collectForm(self):

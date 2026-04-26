@@ -11,21 +11,41 @@ class mainWindow(MainForm, QMainWindow):
         self.login_window = loginWindow
         self.login_name = loginName
 
-        # books临时保存所有图书数据，后续接入数据库时可以替换这里。
-        self.books = []
+        # 图书集合对象
+        # 2个初始书信息
+        # 之后对接数据库
+        self.books = [{
+            "book_code": "ABC",
+            "book_name": "Python高级开发",
+            "author": "25软件5班",
+            "type": "A",
+            "publish_date": "2026-04-26",
+            "can_borrow": "可借",
+            "tags": "新书",
+            "remark": "备注"
+        }, {
+            "book_code": "12345",
+            "book_name": "Java开发",
+            "author": "25软件5班",
+            "type": "A",
+            "publish_date": "2026-04-26",
+            "can_borrow": "可借",
+            "tags": "新书",
+            "remark": "备注"
+        }]
 
         self.actionexit.triggered.connect(self.backToLogin)
         self.actionclose.triggered.connect(self.exitApp)
         self.statusbar.showMessage(f"当前用户：{self.login_name}，欢迎使用系统！")
         self.btn_book_add.clicked.connect(self.showBookAdd)
-        self.btn_book_search.clicked.connect(self.searchBooks)
+        self.btn_book_search.clicked.connect(self.searchBook)
         self.btn_book_delete.clicked.connect(self.deleteBook)
         self.btn_book_all.clicked.connect(self.showAllBooks)
         self.btn_book_save.clicked.connect(self.saveBooks)
         self.actionabout_sys.triggered.connect(self.showSysVersion)
 
         self.initBookTable()
-        self.showBooks(self.books)
+        self.showBookList(self.books)
 
     # 初始化图书表格的列名和选择方式
     def initBookTable(self):
@@ -48,15 +68,21 @@ class mainWindow(MainForm, QMainWindow):
         self.book_add_window = bookAddWindow()
         # 模态弹窗
         result = self.book_add_window.exec()
+
+        # Accepted 校验成功的新图书
         if result == bookAddWindow.DialogCode.Accepted:
+            # 录入页面的data给book
             book = self.book_add_window.data
 
             if self.isBookCodeExists(book["book_code"]):
                 QMessageBox.warning(self, "提示", "图书编码已存在，请重新录入")
                 return
 
+            # 加入books集合
+            # append 在集合最后插入数据
             self.books.append(book)
-            self.showBooks(self.books)
+            # 刷新最新数据
+            self.showBookList(self.books)
         # 非模态弹窗
         # self.book_add_window.show()
 
@@ -68,11 +94,22 @@ class mainWindow(MainForm, QMainWindow):
         return False
 
     # 根据传入的图书列表刷新表格，搜索、删除、显示全部都会调用这个方法
-    def showBooks(self, book_list):
+    def showBookList(self, book_list):
+        # 1. 设置数据表格列数量
+        # self.table_book.setColumnCount(len(book_list))
+        # ！ 设置行数量
         self.table_book.setRowCount(len(book_list))
 
+        # 2. 遍历集合，行
         for row, book in enumerate(book_list):
-            status = "在库" if book["can_borrow"] else "已借出"
+            # 转换状态，保证要么是可借，要么是借出
+            # 丢失  状态
+            status = "可借" if book["can_borrow"] else "借出"
+            # 临时的行数据
+            # 对象  字段无序的
+            # List  集合    有序的
+
+            #  ["ABC", "Python开发", ........]
             row_data = [
                 book["book_code"],
                 book["book_name"],
@@ -84,28 +121,33 @@ class mainWindow(MainForm, QMainWindow):
                 book["remark"]
             ]
 
+            # 3. 遍历列
+            # 遍历行数据，设置每列的值
             for column, value in enumerate(row_data):
                 self.table_book.setItem(row, column, QTableWidgetItem(str(value)))
 
-    # 按书名和状态筛选图书
-    def searchBooks(self):
+    # 搜索+筛选
+    def searchBook(self):
         keyword = self.txt_search.text().strip()
         status_index = self.cb_book_status.currentIndex()
+
         result = []
 
         for book in self.books:
             if keyword and keyword not in book["book_name"]:
                 continue
 
-            if status_index == 1 and not book["can_borrow"]:
+            # 索引1 = 可借，排除借出的图书
+            # 索引2 = 借出，排除可借的图书
+            if status_index == 1 and book["can_borrow"] == "借出":
                 continue
 
-            if status_index == 2 and book["can_borrow"]:
+            if status_index == 2 and book["can_borrow"] == "可借":
                 continue
 
             result.append(book)
 
-        self.showBooks(result)
+        self.showBookList(result)
 
     # 删除表格中选中的图书，同时从books临时数据中移除真实数据
     def deleteBook(self):
@@ -124,14 +166,19 @@ class mainWindow(MainForm, QMainWindow):
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            self.books = [book for book in self.books if book["book_code"] != book_code]
-            self.showBooks(self.books)
+            # 删掉图书编码为 book_code的书籍
+            new_books = []
+            for book in self.books:
+                if book["book_code"] != book_code:
+                    new_books.append(book)
+            self.books = new_books
+            self.searchBook()
 
     # 清空搜索条件并显示所有图书
     def showAllBooks(self):
         self.txt_search.clear()
         self.cb_book_status.setCurrentIndex(0)
-        self.showBooks(self.books)
+        self.searchBook()
 
     # 当前只使用临时变量保存，后续接数据库时替换这里即可
     def saveBooks(self):
