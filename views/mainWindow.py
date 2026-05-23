@@ -27,6 +27,7 @@ class mainWindow(MainForm, QMainWindow):
         self.btn_book_delete.clicked.connect(self.deleteBook)
         self.btn_book_all.clicked.connect(self.showAllBooks)
         self.btn_book_save.clicked.connect(self.saveBooks)
+        self.btn_refresh.clicked.connect(self.refresh_stats)
         self.actionabout_sys.triggered.connect(self.showSysVersion)
 
         self.initBookTable()
@@ -58,6 +59,36 @@ class mainWindow(MainForm, QMainWindow):
     def loadBooks(self):
         self.books = self.db.get_books()
         self.showBookList(self.books)
+        # 调用统计分析
+        self.refresh_stats()
+
+    # 刷新统计分析
+    def refresh_stats(self):
+        # 获取图书总数
+        book_total = self.db.get_book_total()
+        # 获取可借图书总数
+        book_can_borrow = self.db.get_book_borrow()
+
+        # 赋值到界面
+        self.txt_book_total.setText(str(book_total['total_count']))
+        self.txt_book_can_borrow_total.setText(str(book_can_borrow['total_count']))
+
+        # 可借比例计算
+        can_borrow_rate = 0
+        if book_total['total_count'] > 0:
+            can_borrow_rate = int(book_can_borrow['total_count'] / book_total['total_count'] * 100)
+        self.progress_can_borrow.setValue(can_borrow_rate)
+
+        # 显示按类型分组统计
+        type_stats = self.db.get_book_type_statistics()
+        self.table_book_stats.setColumnCount(2)
+        self.table_book_stats.setHorizontalHeaderLabels(["分类", "数量"])
+        self.table_book_stats.setRowCount(len(type_stats))
+
+        for row, item in enumerate(type_stats):
+            self.table_book_stats.setItem(row, 0, QTableWidgetItem(item["type_name"]))
+            self.table_book_stats.setItem(row, 1, QTableWidgetItem(str(item["book_count"])))
+
 
     # 显示录入图书弹框
     def showBookAdd(self):

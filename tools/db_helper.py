@@ -5,6 +5,8 @@ class BookDB:
     def __init__(self):
         # 数据库文件放在项目根目录，方便查看和备份。
         self.conn = sqlite3.connect("books.db")
+        # 返回字典
+        self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
         self.create_table()
 
@@ -24,6 +26,55 @@ class BookDB:
             )
         """)
         self.conn.commit()
+
+    # 统计图书总数
+    def get_book_total(self):
+        self.cursor.execute("""
+            SELECT
+                COUNT(*) AS total_count
+            FROM book
+        """)
+        # 获取一行记录
+        row = self.cursor.fetchone()
+
+        # return row["total_count"] or 0
+
+        return {
+            "total_count": row["total_count"] or 0
+        }
+
+    # 统计可借的图书
+    def get_book_borrow(self):
+        self.cursor.execute("""
+                    SELECT
+                        COUNT(*) AS total_count
+                    FROM book WHERE can_borrow = 1
+                """)
+        row = self.cursor.fetchone()
+
+        return {
+            "total_count": row["total_count"] or 0
+        }
+
+    # 按分类统计图书数量
+    def get_book_type_statistics(self):
+        self.cursor.execute("""
+            SELECT
+                type,
+                COUNT(*) AS book_count
+            FROM book
+            GROUP BY type
+        """)
+        rows = self.cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append({
+                "type_name": row["type"],
+                "book_count": row["book_count"]
+            })
+
+        return result
 
     # 查询所有图书，并把数据库记录转换成界面使用的字典。
     def get_books(self):
